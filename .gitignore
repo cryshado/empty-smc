@@ -1,0 +1,11 @@
+#
+#  .gitignore file
+#
+
+# specific
+auto/*
+!auto/.gitkeep
+testnet-global.config.json
+
+# ide
+.idea

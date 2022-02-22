@@ -1,0 +1,47 @@
+"TonUtil.fif"   include
+"GetOpt.fif"    include
+"Asm.fif"       include
+
+{ show-options-help 1 halt } : usage
+0 =: t-flag
+
+begin-options
+    "<workchain-id> [--testnet]" +cr { +" " } 7 times
+    +"Creates a new 'empty code' smc in the specified workchain" +cr
+    disable-digit-options generic-help-setopt
+
+    "t" "--testnet" { 2 =: t-flag } short-long-option
+        "Displays addresses with the testnet-only flag (+2)" option-help
+    "h" "--help" { usage } short-long-option
+        "Shows a help message" option-help
+parse-options
+
+$# 1 <> ' usage if
+$1 parse-workchain-id =: workchain-id
+
+{ { ."-" } 32 times cr } : pass-line
+
+<b now 32 u, b> =: init-storage
+
+<{  SETCP0 ACCEPT
+    PROGRAM{ main PROC:<{ }> }END>c
+    PUSHREF SETCODE
+}>c =: code
+
+<b b{0011} s, code ref, init-storage ref, null dict, b>
+=: state-init
+
+state-init hashu workchain-id swap 2=: smc-addr
+
+."new smc address:           " smc-addr .addr cr
+."bounceable (for later):    " smc-addr t-flag 4 + .Addr cr
+."non-bounceable (for init): " smc-addr t-flag 5 + .Addr cr
+pass-line
+
+<b  // Message X
+    b{1000100} s, smc-addr addr,
+    b{000010} s, state-init <s s, b{0} s,
+b> 2 boc+>B
+
+"auto/init.boc" tuck B>file
+."saved init query to file:  " type cr
